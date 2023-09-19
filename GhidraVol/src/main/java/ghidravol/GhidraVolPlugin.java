@@ -53,7 +53,7 @@ public class GhidraVolPlugin extends ProgramPlugin {
 	 * 
 	 * @param tool The plugin tool that this plugin is added to.
 	 */
-	public GhidraVol5Plugin(PluginTool tool) {
+	public GhidraVolPlugin(PluginTool tool) {
 		super(tool);
 
 		// TODO: Customize provider (or remove if a provider is not desired)
