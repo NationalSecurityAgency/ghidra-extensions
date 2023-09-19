@@ -6,7 +6,7 @@
 - Author: d-millar
 
 ## GhidraSarifHandlers: 
-- Description: sample per-result & one per-run SARIF-import artifact handlers
+- Description: sample per-result & per-run SARIF-import artifact handlers
 - Author: d-millar
 
 
