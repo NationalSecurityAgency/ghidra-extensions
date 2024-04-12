@@ -42,21 +42,27 @@ else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
 if (ghidraInstallDir) {
 	apply from: new File(ghidraInstallDir).getCanonicalPath() + "/support/buildExtension.gradle"
 }
-else {
-	throw new GradleException("GHIDRA_INSTALL_DIR is not defined!")
-}
+
 //----------------------END "DO NOT MODIFY" SECTION-------------------------------
+
+apply from: "$rootProject.projectDir/gradle/distributableGhidraExtension.gradle"
+apply from: "$rootProject.projectDir/gradle/javaProject.gradle"
+apply from: "$rootProject.projectDir/gradle/javaTestProject.gradle"
+
+apply plugin: 'eclipse'
+eclipse.project.name = 'Xtra Debugger-agent-volatility'
+
+dependencies {
+	api project(path: ':Debugger-rmi-trace')
+	api project(path: ':Debugger-agent-gdb')
+	api project(path: ':Debugger-agent-lldb')
+}
 
 repositories {
 	// Declare dependency repositories here.  This is not needed if dependencies are manually 
 	// dropped into the lib/ directory.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html for more info.
 	// Ex: mavenCentral()
-}
-
-dependencies {
-	//pypkgInstall project(path: ':Debugger-rmi-trace', configuration: 'pypkgInstall')
-	//pypkgInstall project(path: ':Debugger-agent-gdb', configuration: 'pypkgInstall')
 }
 
 task assemblePyPackage(type: Copy) {

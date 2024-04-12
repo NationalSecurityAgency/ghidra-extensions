@@ -1,17 +1,5 @@
 ## ###
-#  IP: GHIDRA
-# 
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#  
-#       http://www.apache.org/licenses/LICENSE-2.0
-#  
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+#  IP: Volatility License
 ##
 import argparse
 import inspect
@@ -45,22 +33,33 @@ failures = framework.import_files(volatility3.plugins, True)
 
 print(sys.version)
 
-vol_mnt = os.environ.get("VOL_MNT", "gdb:////")
-vol_cfg = os.environ.get("VOL_CFG", os.getcwd()+"/data/")
+#vol_mnt = os.environ.get("VOL_MNT", "file://////Users//dbm//vmware//Win10x64.vmwarevm//Win10x64-Snapshot2.vmem")
+vol_mnt = os.environ.get("VOL_MNT", "vol:////")
+parent = os.path.dirname(inspect.getfile(inspect.currentframe()))
+vol_cfg = os.environ.get("VOL_CFG", parent+"/config/")
 
-# USING FUSE:
-#vol_mnt = os.environ.get("VOL_MNT", "file:///mnt/gdb/accessed")
+
+class PrintedProgress(object):
+    def __init__(self):
+        self._max_message_len = 0
+
+    def __call__(self, progress: Union[int, float], description: str = None):
+        message = f"\rProgress: {round(progress, 2): 7.2f}\t\t{description or ''}"
+        message_len = len(message)
+        self._max_message_len = max([self._max_message_len, message_len])
+        print(message, end=(" " * (self._max_message_len - message_len)) + "\r")
+
 
 def vol(cmd_args):
-    progress_callback = None
+    progress_callback = PrintedProgress()
     plugin_list = framework.list_plugins()
     plugin = plugin_list[cmd_args[0]]
 
     # Do the initialization
-    ctx = contexts.Context()  
+    ctx = contexts.Context()
     failures = framework.import_files(
         volatility3.plugins, True
-    ) 
+    )
     automagics = automagic.available(ctx)
 
     base_config_path = "plugins"
@@ -97,7 +96,7 @@ def vol(cmd_args):
 
     constructed = None
     try:
-        progress_callback = None #PrintedProgress()
+        progress_callback = PrintedProgress()
 
         constructed = plugins.construct_plugin(
             ctx,
@@ -110,20 +109,21 @@ def vol(cmd_args):
     except exceptions.UnsatisfiedException as excp:
         print(excp)
 
-    #renderers = dict(
+    # renderers = dict(
     #    [
     #        (x.name.lower(), x)
     #        for x in framework.class_subclasses(text_renderer.CLIRenderer)
     #    ]
-    #)
-    
+    # )
+
     try:
         if constructed:
             ret = constructed.run()
-            #renderers["json"]().render(ret)
+            # renderers["json"]().render(ret)
             return render(ret)
     except exceptions.VolatilityException as excp:
         print(excp)
+
 
 def render(grid: interfaces.renderers.TreeGrid):
     final_output: Tuple[
@@ -169,6 +169,7 @@ def render(grid: interfaces.renderers.TreeGrid):
     if not grid.populated:
         grid.populate(visitor, final_output)
     else:
-        grid.visit(node=None, function=visitor, initial_accumulator=final_output)
+        grid.visit(node=None, function=visitor,
+                   initial_accumulator=final_output)
 
     return final_output[1]

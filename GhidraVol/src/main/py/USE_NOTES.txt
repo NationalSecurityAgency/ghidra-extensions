@@ -1,10 +1,10 @@
 Notes:
-- Volatility is file-based having been developed primarily for core dump analysis. The current implementation 
-uses Python's FUSE implementation to link Volatility's file accesses to gdb memory accesses. The files access point
-is hard-wired for the moment to /mnt/gdb, which is linked to ghidra_install_dir/Ghidra/Debug/Debugger-agent-gdb-vol/data.
-- Currently, the mount point must be freed between executions: "sudo umount -l /mnt/gdb"
-- Because core dumps are mapped to physical memory, the command "maintenance packet Qqemu.PhyMemMode:1" must be
-issued from the gdb CLI prior to invoking any ghidragdb/ghidravol commands.
+- Volatility was developed primarily for core dump analysis (versus live targets). The current implementation 
+overwrites Volatility's FileLayer with either a gdb- or lldb-based memory read mechanism, i.e. memory reads
+are re-directed back from Volatility to the traceRMI server.
+- Because core dumps are mapped to physical memory, the command "maintenance packet Qqemu.PhyMemMode:1" or 
+"process plugin packet send Qqemu.PhyMemMode:1" is issued from gdb/lldb prior to invoking any ghidravol 
+commands and then re-issued with :0 for a reset.
 
 - Config files are assumed to match the commands being executed, i.e. windows.pslist.PsList uses windows.config.
 - Config files require several "magic" values to work correctly, including:
@@ -12,9 +12,10 @@ issued from the gdb CLI prior to invoking any ghidragdb/ghidravol commands.
      - kernel.layer_name.page_map_offset
      - kernel.symbol_table_name.isf_url
  - The page_map_offset is currently set to 0xDBACE000L (3685539840), which will cause the read_memory code
- to use the value stored in CR3 if that address is requested. This save modifying the config with the running
- CR3 value. That said, certain functions may requires the system CR3, i.e. not the current CR3.
- - The other magic values as they would be for Volatility.
+ to use the value stored in CR3 if that address is requested. This saves modifying the config with the running
+ CR3 value. That said, certain functions may requires the system CR3, i.e. not the current CR3. NB: VMware
+ requires using the "monitor r" command to read CR3, which is not currently implemented, so don't use the magic value.
+ - The other magic values are as they would be for Volatility.
  - For Linux, kernel.layer_name.kernel_virtual_offset can be set to 0 if the kernel is booted with nokaslr.
  Typically, this is done using by:
     - editing /etc/default/grub.d/50-cloudimg-settings.cfg or the equivalent
@@ -35,21 +36,46 @@ issued from the gdb CLI prior to invoking any ghidragdb/ghidravol commands.
     - modify linux.config to match
     - (NB: it may be difficult to find the exact match on the above website)
     
-- The Volitlity Linux commands sweep memory by default for every command.  Once you have the config file 
-set correctly.  Move vol_install_dir/volatility3/frameworks/automagic/linux.py to linux.saved.  Failure to 
+- The Volatility Linux commands sweep memory by default for every command.  Once you have the config file 
+set correctly, move vol_install_dir/volatility3/frameworks/automagic/linux.py to linux.saved.  Failure to 
 do so will cause many of the commands to timeout with relatively undecipherable error messages.
 
-- A typical gdb session might look like:
-    - target remote :1234
-    - python import ghidravol
-    - ghidra trace listen
-    - (from Ghidra, run the ConnectTraceRmiScript)
-    - ghidra trace start
-    - ghidra trace tx-start "tx"
-    - ghidra trace put-all
-    - ghidra trace put-all-vol-linux
-    - ghidra trace tx-commit
-    - ghidra trace activate
-    - (commands can be abbreviated or tab-completed in many cases)
+- A typical gdb/lldb session (encapsulated in the launcher shells) might look like:
+
+python import ghidragdb
+python from ghidragdb import *
+set osabi Windows
+python import ghidravol
+python remote localhost:8864 (vmware) or :1234 (qemu)
+
+or
+
+script import ghidralldb
+script from ghidralldb import *
+script util.set_convenience_variable('osabi','windows')
+script import ghidravol
+gdb-remote localhost:8864 (vmware) or :1234 (qemu)
+
+ghidra trace listen (or connect)
+ghidra trace start
+ghidra trace tx-start "tx"
+ghidra trace put-all
+ghidra trace put-all-vol
+ghidra trace tx-commit
+ghidra trace activate
+    
+- (commands can be abbreviated or tab-completed in many cases)
+
+- Because QEMU and VMware are live targets, Volatility's logic may fail if it page faults mid-process.
+The symbol sets can usually be determined by running the usual Volatility processes against a snapshot
+and then restoring the target from that snapshot.  Retrieving the CR3/DTD values and kernel base in the
+same way MAY work. Alternatively, try using "info registers" or "register read" for the CR3 value in QEMU
+and "monitor r cr3" or "process plugin packet monitor r cr3" for VMware. Other approaches may also be 
+used for retrieving the kernel base, e.g. 
+- retrieve gs_base 
+- read offset 0x38 to get the KIDTR value 
+- use the KIDTR value + 0x4 to get a sample interrupt routine
+- clear the bottom four bytes of the interrupt value and back up in intervals of 0x100000 until you
+find the MZ (0x4d 0x5a) header start
 
 

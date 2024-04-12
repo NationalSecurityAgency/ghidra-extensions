@@ -1,0 +1,14 @@
+##VERSION: 2.0
+##MODULE IP: Volatility License
+Module.manifest||GHIDRA||||END|
+build.gradle.save||GHIDRA||||END|
+extension.properties||GHIDRA||||END|
+src/main/py/README.md||GHIDRA||||END|
+src/main/py/USE_NOTES.txt||GHIDRA||||END|
+src/main/py/ghidravol/config/linux.config||GHIDRA||||END|
+src/main/py/ghidravol/config/mac.config||GHIDRA||||END|
+src/main/py/ghidravol/config/windows.config||GHIDRA||||END|
+src/main/py/ghidravol/schema_vol_gdb.xml||GHIDRA||||END|
+src/main/py/ghidravol/schema_vol_lldb.xml||GHIDRA||||END|
+src/main/py/pyproject.toml||GHIDRA||||END|
+src/main/py/tests/.gitkeep||GHIDRA||||END|

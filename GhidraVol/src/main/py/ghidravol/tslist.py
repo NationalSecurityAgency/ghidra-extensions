@@ -1,3 +1,6 @@
+## ###
+#  IP: Volatility License
+##
 import datetime
 import logging
 from typing import Callable, Iterable, List, Type
@@ -23,22 +26,22 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     @classmethod
     def get_requirements(cls):
         return [
-            requirements.ModuleRequirement(name = 'kernel', description = 'Windows kernel',
-                                           architectures = ["Intel32", "Intel64"]),
-            requirements.BooleanRequirement(name = 'physical',
-                                            description = 'Display physical offsets instead of virtual',
-                                            default = cls.PHYSICAL_DEFAULT,
-                                            optional = True),
-            requirements.ListRequirement(name = 'pid',
-                                         element_type = int,
-                                         description = "Process ID to include (all other processes are excluded)",
-                                         optional = True),
-            requirements.BooleanRequirement(name = 'dump',
-                                            description = "Extract listed processes",
-                                            default = False,
-                                            optional = True)
+            requirements.ModuleRequirement(name='kernel', description='Windows kernel',
+                                           architectures=["Intel32", "Intel64"]),
+            requirements.BooleanRequirement(name='physical',
+                                            description='Display physical offsets instead of virtual',
+                                            default=cls.PHYSICAL_DEFAULT,
+                                            optional=True),
+            requirements.ListRequirement(name='pid',
+                                         element_type=int,
+                                         description="Process ID to include (all other processes are excluded)",
+                                         optional=True),
+            requirements.BooleanRequirement(name='dump',
+                                            description="Extract listed processes",
+                                            default=False,
+                                            optional=True)
         ]
-    
+
     @classmethod
     def process_dump(
             cls, context: interfaces.context.ContextInterface, kernel_table_name: str, pe_table_name: str,
@@ -61,24 +64,26 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         try:
             proc_layer_name = proc.add_process_layer()
             peb = context.object(kernel_table_name + constants.BANG + "_PEB",
-                                 layer_name = proc_layer_name,
-                                 offset = proc.Peb)
+                                 layer_name=proc_layer_name,
+                                 offset=proc.Peb)
 
             dos_header = context.object(pe_table_name + constants.BANG + "_IMAGE_DOS_HEADER",
-                                        offset = peb.ImageBaseAddress,
-                                        layer_name = proc_layer_name)
-            file_handle = open_method(f"pid.{proc.UniqueProcessId}.{peb.ImageBaseAddress:#x}.dmp")
+                                        offset=peb.ImageBaseAddress,
+                                        layer_name=proc_layer_name)
+            file_handle = open_method(
+                f"pid.{proc.UniqueProcessId}.{peb.ImageBaseAddress:#x}.dmp")
             for offset, data in dos_header.reconstruct():
                 file_handle.seek(offset)
                 file_handle.write(data)
         except Exception as excp:
-            vollog.debug(f"Unable to dump PE with pid {proc.UniqueProcessId}: {excp}")
+            vollog.debug(
+                f"Unable to dump PE with pid {proc.UniqueProcessId}: {excp}")
 
         return file_handle
 
     @classmethod
     def create_pid_filter(cls, pid_list: List[int] = None, exclude: bool = False) -> Callable[
-        [interfaces.objects.ObjectInterface], bool]:
+            [interfaces.objects.ObjectInterface], bool]:
         """A factory for producing filter functions that filter based on a list
         of process IDs.
 
@@ -89,20 +94,20 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Filter function for passing to the `list_processes` method
         """
-        filter_func = lambda _: False
+        def filter_func(_): return False
         # FIXME: mypy #4973 or #2608
         pid_list = pid_list or []
         filter_list = [x for x in pid_list if x is not None]
         if filter_list:
             if exclude:
-                filter_func = lambda x: x.UniqueProcessId in filter_list
+                def filter_func(x): return x.UniqueProcessId in filter_list
             else:
-                filter_func = lambda x: x.UniqueProcessId not in filter_list
+                def filter_func(x): return x.UniqueProcessId not in filter_list
         return filter_func
 
     @classmethod
     def create_name_filter(cls, name_list: List[str] = None, exclude: bool = False) -> Callable[
-        [interfaces.objects.ObjectInterface], bool]:
+            [interfaces.objects.ObjectInterface], bool]:
         """A factory for producing filter functions that filter based on a list
         of process names.
 
@@ -112,20 +117,21 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Filter function for passing to the `list_processes` method
         """
-        filter_func = lambda _: False
+        def filter_func(_): return False
         # FIXME: mypy #4973 or #2608
         name_list = name_list or []
         filter_list = [x for x in name_list if x is not None]
         if filter_list:
             if exclude:
-                filter_func = lambda x: utility.array_to_string(x.ImageFileName) in filter_list
+                def filter_func(x): return utility.array_to_string(
+                    x.ImageFileName) in filter_list
                 print("if exclude")
             else:
-                filter_func = lambda x: utility.array_to_string(x.ImageFileName) not in filter_list
+                def filter_func(x): return utility.array_to_string(
+                    x.ImageFileName) not in filter_list
                 print("if include?")
         return filter_func
-        
-    
+
     @classmethod
     def list_processes(cls,
                        context: interfaces.context.ContextInterface,
@@ -133,7 +139,7 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                        symbol_table: str,
                        filter_func: Callable[[interfaces.objects.ObjectInterface], bool] = lambda _: False, include_threads: bool = True) -> \
             Iterable[interfaces.objects.ObjectInterface]:
-            #include threads here?
+            # include threads here?
         """Lists all the processes in the primary layer that are in the pid
         config option.
 
@@ -149,12 +155,14 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         # We only use the object factory to demonstrate how to use one
         kvo = context.layers[layer_name].config['kernel_virtual_offset']
-        ntkrnlmp = context.module(symbol_table, layer_name = layer_name, offset = kvo)
+        ntkrnlmp = context.module(
+            symbol_table, layer_name=layer_name, offset=kvo)
 
         ps_aph_offset = ntkrnlmp.get_symbol("PsActiveProcessHead").address
-        
+
         # add more swit process to thread here?
-        list_entry = ntkrnlmp.object(object_type = "_LIST_ENTRY", offset = ps_aph_offset)
+        list_entry = ntkrnlmp.object(
+            object_type="_LIST_ENTRY", offset=ps_aph_offset)
 
         # This is example code to demonstrate how to use symbol_space directly, rather than through a module:
         #
@@ -167,25 +175,26 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         # Note: "nt_symbols!_EPROCESS" could have been used, but would rely on the "nt_symbols" symbol table not already
         # having been present.  Strictly, the value of the requirement should be joined with the BANG character
         # defined in the constants file
-        reloff = ntkrnlmp.get_type("_EPROCESS").relative_child_offset("ActiveProcessLinks")
-        eproc = ntkrnlmp.object(object_type = "_EPROCESS", offset = list_entry.vol.offset - reloff, absolute = True)
-    #threads?^
+        reloff = ntkrnlmp.get_type(
+            "_EPROCESS").relative_child_offset("ActiveProcessLinks")
+        eproc = ntkrnlmp.object(
+            object_type="_EPROCESS", offset=list_entry.vol.offset - reloff, absolute=True)
+    # threads?^
 
-    
         for proc in eproc.ActiveProcessLinks:
             for thread in proc.ThreadListHead.to_list(f"{symbol_table}{constants.BANG}_ETHREAD", "ThreadListEntry"):
-                #yield thread
+                # yield thread
 
                 if not filter_func(proc):
                     yield thread
-                    
-        #maybe don't even need the include_threads?
-            #if include_threads:
+
+        # maybe don't even need the include_threads?
+            # if include_threads:
                 #print("hit if include threads?")
-                #yield from proc.Pcb.ThreadListHead
-                
-                #never hits this?^ indentation seems right
-    
+                # yield from proc.Pcb.ThreadListHead
+
+                # never hits this?^ indentation seems right
+
     def _generator(self):
 
         kernel = self.context.modules[self.config['kernel']]
@@ -194,24 +203,24 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                                                                 self.config_path,
                                                                 "windows",
                                                                 "pe",
-                                                                class_types = pe.class_types)
+                                                                class_types=pe.class_types)
 
         memory = self.context.layers[kernel.layer_name]
         if not isinstance(memory, layers.intel.Intel):
             raise TypeError("Primary layer is not an intel layer")
 
         for thread in self.list_processes(self.context,
-                                        kernel.layer_name,
-                                        kernel.symbol_table_name,
-                                        filter_func = self.create_pid_filter(self.config.get('pid', None)), include_threads = True):
-                                         #, ,include_threads: bool = True
-                                        #added include threads here
-    
-            #if not self.config.get('physical', self.PHYSICAL_DEFAULT):
+                                          kernel.layer_name,
+                                          kernel.symbol_table_name,
+                                          filter_func=self.create_pid_filter(self.config.get('pid', None)), include_threads=True):
+                                         # , ,include_threads: bool = True
+                                        # added include threads here
+
+            # if not self.config.get('physical', self.PHYSICAL_DEFAULT):
                 #offset = thread.vol.offset
-            #else:
+            # else:
                 #(_, _, offset, _, _) = list(memory.mapping(offset = thread.vol.offset, length = 0))[0]
-    #^figure out offset later!
+            # ^figure out offset later!
             file_output = "Disabled"
 
             try:
@@ -219,15 +228,16 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                     file_handle = self.process_dump(self.context, kernel.symbol_table_name,
                                                     pe_table_name, thread, self.open)
                     file_output = "Error outputting file"
-                    
+
                     if file_handle:
                         file_handle.close()
                         file_output = str(file_handle.preferred_filename)
-                
+
                 yield (0, (thread.Cid.UniqueProcess, thread.Cid.UniqueThread))
-        #All UniqueProcessId... (process changed to threads) in this yield func.
+        # All UniqueProcessId... (process changed to threads) in this yield func.
             except exceptions.InvalidAddressException:
-                vollog.info(f"Invalid process found at address: {proc.vol.offset:x}. Skipping")
+                vollog.info(
+                    f"Invalid process found at address: {proc.vol.offset:x}. Skipping")
 
     def generate_timeline(self):
         for row in self._generator():
@@ -238,12 +248,12 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     def get_next_entry(self, member):
         return self.m(member).dereference()
-    
-    def list_of_type(self, type, member, forward = True, head_sentinel = True):
+
+    def list_of_type(self, type, member, forward=True, head_sentinel=True):
         if not self.is_valid():
             return
 
-        ## Get the first element
+        # Get the first element
         if forward:
             nxt = self.get_next_entry("Flink")
         else:
@@ -258,32 +268,32 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         while nxt.is_valid() and nxt.obj_offset not in seen:
 
-            ## Instantiate the object
-            item = obj.Object(type, offset = nxt.obj_offset - offset,
-                                    vm = self.obj_vm,
-                                    parent = self.obj_parent,
-                                    native_vm = self.obj_native_vm,
-                                    name = type)
+            # Instantiate the object
+            item = obj.Object(type, offset=nxt.obj_offset - offset,
+                              vm=self.obj_vm,
+                              parent=self.obj_parent,
+                              native_vm=self.obj_native_vm,
+                              name=type)
 
             seen.add(nxt.obj_offset)
 
             yield item
 
             if forward:
-                nxt =  item.m(member).get_next_entry("Flink")
+                nxt = item.m(member).get_next_entry("Flink")
             else:
                 nxt = item.m(member).get_next_entry("Blink")
 
     def __nonzero__(self):
-        ## List entries are valid when both Flinks and Blink are valid
+        # List entries are valid when both Flinks and Blink are valid
         return bool(self.Flink) or bool(self.Blink)
 
     def __iter__(self):
         return self.list_of_type(self.obj_parent.obj_name, self.obj_name)
+
     def run(self):
-        offsettype = "(V)" if not self.config.get('physical', self.PHYSICAL_DEFAULT) else "(P)"
-    
+        offsettype = "(V)" if not self.config.get(
+            'physical', self.PHYSICAL_DEFAULT) else "(P)"
+
         return renderers.TreeGrid([("PID", int), ("TID", int)], self._generator())
-                                   #("CreateTime", datetime.datetime), ("ExitTime", datetime.datetime), ("State", str)], self._generator())
-
-
+        # ("CreateTime", datetime.datetime), ("ExitTime", datetime.datetime), ("State", str)], self._generator())
