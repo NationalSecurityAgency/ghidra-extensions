@@ -1,0 +1,49 @@
+// heap_allocation !=> free
+// potential leaks given by ALLOC but not ALLOC,FREE
+
+#include "pcode/taintquery.dl"
+#include "./assist.dl"
+
+TaintSourceVertex("ALLOC", vn, p) :-
+	IsExtCall(call, name),
+	IsAlloc(name),
+        PCODE_OUTPUT(call, vn),
+	Vertex(vn, p).
+	
+TaintSourceVertex("FREE", vn, p) :-
+	TaintSourceVertex("ALLOC", vn, p).
+	
+// Returned from an uncalled function
+TaintSanitizeVertex("FREE", vn, p) :-
+   	PCODE_INPUT(ret, _, vn),
+   	PCODE_MNEMONIC(ret, "RETURN"),
+   	VNODE_HFUNC(vn, hf),
+    	!IsCalled(hf),
+	Vertex(vn, p).
+
+// Passed back through a parameter from an uncalled function
+TaintSanitizeVertex("FREE", vn, p) :-
+   	PCODE_MNEMONIC(store, "STORE"),
+   	PCODE_INPUT(store, 1, param),
+    	HFUNC_PROTO(hf, pp),
+    	!IsCalled(hf),
+    	PROTO_PARAMETER(pp, _, hs),
+    	SYMBOL_HVAR(hs, hv),
+    	HVAR_REPRESENTATIVE(hv, param),
+   	PCODE_INPUT(store, 2, vn),
+	Vertex(vn, p).
+
+// Freed
+TaintSanitizeVertex("FREE", vn, p) :-
+	IsExtCall(call, name),
+	IsFree(name),
+        PCODE_INPUT(call, _, vn),
+	Vertex(vn, p).
+	
+// Mark the actual free's
+LeakingSinkVertex("FREE", vn, p) :-
+	IsExtCall(call, name),
+	IsFree(name),
+        PCODE_INPUT(call, _, vn),
+	Vertex(vn, p).
+

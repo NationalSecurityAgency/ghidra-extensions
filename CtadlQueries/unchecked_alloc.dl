@@ -1,0 +1,18 @@
+// alloc !=> check
+
+#include "pcode/taintquery.dl"
+#include "./assist.dl"
+
+TaintSourceVertex("ALLOC", vn, p) :-
+	IsExtCall(call, name),
+	IsAlloc(name),
+        PCODE_OUTPUT(call, vn),
+	Vertex(vn, p).
+
+TaintSourceVertex("CHECKED", vn, p) :-
+	TaintSourceVertex("ALLOC", vn, p).
+
+TaintSanitizeVertex("CHECKED", vn, p) :-
+        IsCompare(_, vn),
+	Vertex(vn, p).
+

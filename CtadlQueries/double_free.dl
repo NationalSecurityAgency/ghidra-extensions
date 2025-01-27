@@ -1,0 +1,18 @@
+// free1 -> free2
+// potential leaks given by results with more than two values
+
+#include "pcode/taintquery.dl"
+#include "./assist.dl"
+
+TaintSourceVertex(cat("SRC_", to_string(call)), vn, p) :-
+	IsExtCall(call, name),
+	IsFree(name),
+       	PCODE_INPUT(call, _, vn),
+	Vertex(vn, p).
+
+LeakingSinkVertex(cat("SNK_", to_string(call)), vn, p) :-
+	IsExtCall(call, name),
+	IsFree(name),
+       	PCODE_INPUT(call, _, vn),
+	Vertex(vn, p).
+

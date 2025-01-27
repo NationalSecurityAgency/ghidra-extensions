@@ -1,0 +1,18 @@
+// free -> use
+
+#include "pcode/taintquery.dl"
+#include "./assist.dl"
+
+TaintSourceVertex("SOURCE", vn, p) :-
+	IsExtCall(call, name),
+	IsFree(name),
+       	PCODE_INPUT(call, _, vn),
+        PCODE_INPUT(indirect, _, vn),
+        PCODE_MNEMONIC(indirect, "INDIRECT"),
+	Vertex(vn, p).
+
+LeakingSinkVertex("SINK", vn, p) :-
+        IsUse(_, vn),
+	Vertex(vn, p).
+
+

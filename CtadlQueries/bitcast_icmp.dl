@@ -1,0 +1,17 @@
+// bitcast -> icmp
+
+#include "pcode/taintquery.dl"
+#include "./assist.dl"
+
+TaintSourceVertex("SOURCE", vn, p) :-
+        PCODE_INPUT(cast, _, vn0),
+        PCODE_MNEMONIC(cast, "CAST"),
+        PCODE_OUTPUT(cast, vn),
+        vn0 != vn,
+	Vertex(vn, p).
+
+LeakingSinkVertex("SINK", vn, p) :-
+        PCODE_INPUT(icmp, _, vn),
+        (PCODE_MNEMONIC(icmp, "INT_SLESS") ; PCODE_MNEMONIC(icmp, "INT_SLESSEQUAL")),
+	Vertex(vn, p).
+

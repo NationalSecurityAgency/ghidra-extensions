@@ -1,0 +1,93 @@
+.decl ExtNameToOffset(name: symbol, offset: PCodeAddress)
+.decl IsExtCall(call: symbol, name: symbol)
+.decl IsAlloc(name: symbol)
+.decl IsCompare(i: symbol, vn: symbol)
+.decl IsFree(name: symbol)
+.decl IsUse(i: symbol, vn: symbol)
+.decl IsCalled(hf: symbol)
+
+ExtNameToOffset(name, offset) :-
+	HFUNC_NAME(id, name),
+	HFUNC_EP(id, n),
+	HFUNC_LOCAL_EP(n, offset).
+	
+IsExtCall(call, name) :-
+        (PCODE_MNEMONIC(call, "CALL") ; PCODE_MNEMONIC(call, "CALLIND")),
+        PCODE_INPUT(call, 0, f),
+	VNODE_OFFSET_N(f, offset),  
+	ExtNameToOffset(name, offset).
+	
+IsAlloc(name) :-
+	name = "GdipAlloc" ;
+	name = "GlobalAlloc" ;
+	name = "GlobalReAlloc" ;
+	name = "HeapAlloc" ;
+	name = "LocalAlloc" ;
+	name = "malloc".
+	
+IsFree(name) :-
+	name = "GdipFree" ;
+	name = "GlobalFree" ;
+	name = "LocalFree" ;
+	name = "HeapFree" ;
+	name = "LocalAlloc" ;
+	name = "free".
+	
+IsCompare(i, vn) :-
+    PCODE_MNEMONIC(i, mnemonic),
+    ( mnemonic = "INT_AND";
+      mnemonic = "INT_XOR";
+      mnemonic = "INT_NOTEQUAL";
+      mnemonic = "INT_EQUAL";
+      mnemonic = "INT_SLESSEQUAL";
+      mnemonic = "INT_LESSEQUAL";
+      mnemonic = "INT_SLESS";
+      mnemonic = "INT_LESS";
+      mnemonic = "FLOAT_EQUAL";
+      mnemonic = "FLOAT_LESSEQUAL";
+      mnemonic = "FLOAT_LESS" ),
+    PCODE_INPUT(i, _, vn).
+
+IsUse(i, vn) :-
+    PCODE_MNEMONIC(i, mnemonic),
+    ( mnemonic = "INT_ADD";
+      mnemonic = "INT_SRIGHT";
+      mnemonic = "INT_RIGHT";
+      mnemonic = "INT_MULT";
+      mnemonic = "INT_OR";
+      mnemonic = "INT_SDIV";
+      mnemonic = "INT_LEFT";
+      mnemonic = "INT_SREM";
+      mnemonic = "INT_SUB";
+      mnemonic = "INT_DIV";
+      mnemonic = "INT_REM";
+      mnemonic = "FLOAT_ADD";
+      mnemonic = "FLOAT_DIV";
+      mnemonic = "FLOAT_MULT";
+      mnemonic = "FLOAT_SUB";
+      mnemonic = "BOOL_AND";
+      mnemonic = "BOOL_OR";
+      mnemonic = "BOOL_XOR";
+      mnemonic = "TRUNC";
+      mnemonic = "INT_NEGATE";
+      mnemonic = "BOOL_NEGATE";
+      mnemonic = "FLOAT_NEG";
+      mnemonic = "FLOAT_ABS";
+      mnemonic = "FLOAT_SQRT";
+      mnemonic = "FLOAT_CEIL";
+      mnemonic = "FLOAT_FLOOR";
+      mnemonic = "FLOAT_ROUND";
+      mnemonic = "FLOAT2FLOAT";
+      mnemonic = "FLOAT_NAN";
+      mnemonic = "SUBPIECE";
+      mnemonic = "PIECE";
+      mnemonic = "POPCOUNT"),
+    PCODE_INPUT(i, _, vn).
+
+IsCalled(hf) :-
+    PCODE_MNEMONIC(i, "CALL"),
+    PCODE_INPUT(i, 0, vnf),
+    VNODE_ADDRESS(vnf, addr),
+    HFUNC_EP(hf, addr).
+
+

@@ -1,0 +1,26 @@
+// alloc->use w/o store
+
+#include "pcode/taintquery.dl"
+#include "./assist.dl"
+
+TaintSourceVertex("ALLOC", vn, p) :-
+	IsExtCall(call, name),
+	IsAlloc(name),
+        PCODE_OUTPUT(call, vn),
+	Vertex(vn, p).
+
+TaintSourceVertex("INIT", vn, p) :-
+	TaintSourceVertex("ALLOC", vn, p).
+
+// We initialize the data via STORE
+TaintSanitizeVertex("INIT", vn, p) :-
+        PCODE_INPUT(init, _, vn),
+        (IsExtCall(init, _) ; PCODE_MNEMONIC(init, "STORE")),
+	Vertex(vn, p).
+
+// We overwrite the value of the pointer
+TaintSanitizeVertex("INIT", vn, p) :-
+        PCODE_OUTPUT(init, vn),
+        PCODE_MNEMONIC(init, "COPY"),
+	Vertex(vn, p).
+
