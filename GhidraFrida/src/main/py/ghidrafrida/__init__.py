@@ -14,6 +14,4 @@
 #  limitations under the License.
 ##
 
-# NOTE: libraries must precede EVERYTHING, esp pybag and DbgMod
-
 from . import util, commands

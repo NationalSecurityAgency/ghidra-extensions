@@ -30,53 +30,62 @@
 // for the correction version of Gradle to use for the Ghidra installation you specify.
 
 //----------------------START "DO NOT MODIFY" SECTION------------------------------
-def ghidraInstallDir
 
-if (System.env.GHIDRA_INSTALL_DIR) {
-	ghidraInstallDir = System.env.GHIDRA_INSTALL_DIR
+if (findProject(':Generic') != null) {
+
+	apply from: "$rootProject.projectDir/gradle/distributableGhidraExtension.gradle"
+	apply from: "$rootProject.projectDir/gradle/javaProject.gradle"
+	apply from: "$rootProject.projectDir/gradle/javaTestProject.gradle"
+	apply from: "$rootProject.projectDir/gradle/debugger/hasPythonPackage.gradle"
+	
+	apply plugin: 'eclipse'
+	eclipse.project.name = 'Xtra Debugger-agent-xfrida'
+	
+	dependencies {
+		api project(path: ':Debugger-rmi-trace')
+		api project(path: ':Debugger-agent-gdb')
+		api project(path: ':Debugger-agent-lldb')
+	}
+
 }
-else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
-	ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
+else {
+
+	def ghidraInstallDir
+	
+	if (System.env.GHIDRA_INSTALL_DIR) {
+	    ghidraInstallDir = System.env.GHIDRA_INSTALL_DIR
+	}
+	else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
+	    ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
+	}
+	
+	if (ghidraInstallDir) {
+	    apply from: new File(ghidraInstallDir).getCanonicalPath() + "/support/buildExtension.gradle"
+	}
+	else {
+	    throw new GradleException("GHIDRA_INSTALL_DIR is not defined!")
+	}
+	
+	task assemblePyPackage(type: Copy) {
+		from "src/main/py"
+		into "build/pypkg/"
+	}
+	
+	task buildPyPackage {
+		ext.dist = { file("build/pypkg/dist") }
+		inputs.files(assemblePyPackage)
+		outputs.dir(dist)
+		doLast {
+			def exe = "python"
+			exec {
+				workingDir { "build/pypkg" }
+				commandLine exe, "-m", "pip", "install"
+				args "."
+			}
+		}
+	}
+	
+	buildExtension.dependsOn buildPyPackage
 }
+	
 
-if (ghidraInstallDir) {
-	apply from: new File(ghidraInstallDir).getCanonicalPath() + "/support/buildExtension.gradle"
-}
-
-//----------------------END "DO NOT MODIFY" SECTION-------------------------------
-
-apply from: "$rootProject.projectDir/gradle/distributableGhidraExtension.gradle"
-apply from: "$rootProject.projectDir/gradle/javaProject.gradle"
-apply from: "$rootProject.projectDir/gradle/javaTestProject.gradle"
-
-apply plugin: 'eclipse'
-eclipse.project.name = 'Xtra Debugger-agent-xfrida'
-
-dependencies {
-	api project(path: ':Debugger-rmi-trace')
-	api project(path: ':Debugger-agent-gdb')
-	api project(path: ':Debugger-agent-lldb')
-}
-
-repositories {
-	// Declare dependency repositories here.  This is not needed if dependencies are manually 
-	// dropped into the lib/ directory.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html for more info.
-	// Ex: mavenCentral()
-}
-
-task assemblePyPackage(type: Copy) {
-    from "src/main/py"
-    into "build/pypkg/"
-}
-
-task buildPyPackage(type: Exec) {
-    ext.dist = { file("build/pypkg/dist") }
-    inputs.files(assemblePyPackage)
-    outputs.dir(dist)
-    workingDir { "build/pypkg" }
-    commandLine "python", "-m", "build"
-}
-
-// Exclude additional files from the built extension
-// Ex: buildExtension.exclude '.idea/**'

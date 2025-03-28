@@ -34,9 +34,8 @@ def put_processes_vol_win(state, radix):
         keys.append(vol.PROCESS_KEY_PATTERN.format(pid=pidstr))
         infobj = state.trace.create_object(ipath)
         istate = compute_inf_state(inf)
-        infobj.set_value('_state', istate)
-        infobj.set_value('_pid', pid)
-        infobj.set_value('PID', pidstr)
+        infobj.set_value('State', istate)
+        infobj.set_value('PID', pid)
         ppid = inf["PPID"]
         ppidstr = ('0x{:x}' if radix ==
                    16 else '0{:o}' if radix == 8 else '{}').format(ppid)
@@ -117,7 +116,7 @@ def put_threads_vol_win(state, pid, radix):
         tobj = state.trace.create_object(tpath)
         keys.append(vol.THREAD_KEY_PATTERN.format(tnum=tidstr))
         tobj = state.trace.create_object(tpath)
-        tobj.set_value('_tid', tid)
+        tobj.set_value('TID', tid)
         tobj.set_value('PID', pidstr)
         tobj.set_value('TID', tidstr)
         tobj.set_value('_display', '[{}:{}]'.format(

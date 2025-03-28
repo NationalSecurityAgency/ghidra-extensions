@@ -22,12 +22,12 @@
 #@desc    architecture, and it must embed the Python 3 interpreter. You will also need <tt>protobuf</tt>
 #@desc    and <tt>volatility3</tt> installed for Python 3.
 #@desc </body></html>
-#@menu-group cross
+#@menu-group vm
 #@icon icon.debugger
 #@help DebuggerVol3Connector#launcher
 #@env TARGET_PORT:int=1234 "Target Port" "Port for connection to gdbstub"
 #@env TARGET_OSABI:str="Windows" "Target OS" "OS ABI for target"
-#@env OPT_GDB_PATH:str="gdb-multiarch" "Path to gdb" "The path to gdb. Omit the full path to resolve using the system PATH."
+#@env OPT_GDB_PATH:file="gdb-multiarch" "Path to gdb" "The path to gdb. Omit the full path to resolve using the system PATH."
 
 if [ -d ${GHIDRA_HOME}/ghidra/.git ]
 then

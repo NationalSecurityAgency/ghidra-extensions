@@ -1,24 +1,25 @@
 ## ###
-#  IP: GHIDRA
-# 
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#  
-#       http://www.apache.org/licenses/LICENSE-2.0
-#  
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+# IP: GHIDRA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 ##
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 from ghidratrace.client import Address, RegVal
 
 from . import util
 
 
-language_map = {
+language_map: Dict[str, List[str]] = {
     'aarch64': ['AARCH64:BE:64:v8A', 'AARCH64:LE:64:AppleSilicon', 'AARCH64:LE:64:v8A'],
     'aarch64:ilp32': ['AARCH64:BE:32:ilp32', 'AARCH64:LE:32:ilp32', 'AARCH64:LE:64:AppleSilicon'],
     'arm_any': ['ARM:BE:32:v8', 'ARM:BE:32:v8T', 'ARM:LE:32:v8', 'ARM:LE:32:v8T'],
@@ -80,11 +81,11 @@ language_map = {
     'z80': ['z80:LE:16:default', 'z8401x:LE:16:default']
 }
 
-data64_compiler_map = {
+data64_compiler_map: Dict[Optional[str], str] = {
     None: 'pointer64',
 }
 
-x86_compiler_map = {
+x86_compiler_map: Dict[Optional[str], str] = {
     'linux': 'gcc',
     'windows': 'windows',
     # This may seem wrong, but Ghidra cspecs really describe the ABI
@@ -101,7 +102,7 @@ compiler_map = {
 
 def get_arch():
     try:
-        params = util.dbg.query_system_parameters()
+        params = util.dbg.query_system_parameters() # type: ignore
     except Exception:
         print("Error getting actual processor type.")
         return "Unknown"
@@ -120,7 +121,7 @@ def get_osabi():
     if not parm in ['auto', 'default']:
         return parm
     try:
-        params = util.dbg.query_system_parameters()
+        params = util.dbg.query_system_parameters() # type: ignore
     except Exception:
         print("Error getting target OS/ABI")
         pass
@@ -189,7 +190,7 @@ class DefaultMemoryMapper(object):
         if address.space == self.defaultSpace:
             return address.offset
         raise ValueError(
-            f"Address {address} is not in process {proc.GetProcessID()}")
+            f"Address {address} is not in process {proc}")
 
 
 DEFAULT_MEMORY_MAPPER = DefaultMemoryMapper('ram')

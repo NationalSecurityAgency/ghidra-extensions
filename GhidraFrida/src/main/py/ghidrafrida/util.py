@@ -1,22 +1,22 @@
 ## ###
-#  IP: GHIDRA
-# 
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#  
-#       http://www.apache.org/licenses/LICENSE-2.0
-#  
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+# IP: GHIDRA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 ##
 from collections import namedtuple
 from concurrent.futures import Future
 import concurrent.futures
-from ctypes import *
+#from ctypes import *
 import functools
 import io
 import os
@@ -25,8 +25,9 @@ import re
 import sys
 import threading
 import traceback
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, TypeVar, Union, cast
 
-import frida
+import frida # type: ignore
 
 DbgVersion = namedtuple('DbgVersion', ['full', 'name', 'dotted', 'arch'])
 
@@ -182,7 +183,6 @@ class GhidraDbg(object):
     def run_async(self, fn, *args, **kwargs):
         return self._queue.submit(fn, *args, **kwargs)
 
-    @staticmethod
     def check_thread(func):
         '''
         For methods inside of GhidraDbg, ensure it runs on the engine
@@ -232,11 +232,15 @@ if device is not None:
 def compute_frida_ver():
     pat = re.compile(
         '(?P<name>.*Debugger.*) Version (?P<dotted>[\\d\\.]*) (?P<arch>\\w*)')
-    blurb = dbg.cmd('version')
+    if dbg is None:
+        return DbgVersion('Unknown', 'Unknown', '0', 'Unknown')
+    blurb = dbg.cmd('version')  # type: ignore
     matches = [pat.match(l) for l in blurb.splitlines() if pat.match(l)]
     if len(matches) == 0:
         return DbgVersion('Unknown', 'Unknown', '0', 'Unknown')
     m = matches[0]
+    if m is None:
+        return DbgVersion('Unknown', 'Unknown', '0', 'Unknown')
     return DbgVersion(full=m.group(), **m.groupdict())
     name, dotted_and_arch = full.split(' Version ')
 
@@ -374,8 +378,9 @@ def get_module_address(path):
     return current_state[path]
     
 
-def parse_and_eval(expr, type=None):
-    return expr
+def parse_and_eval(expr: Union[str, int],
+                   type: Optional[int] = None) -> int:
+    return int(expr)
 
 
 conv_map = {}

@@ -67,7 +67,7 @@ class GdbLayer(interfaces.layers.DataLayerInterface):
 
     def read(self, offset: int, length: int, pad: bool = False) -> bytes:
         """Reads from the file at offset for length."""
-        print(f"READ {hex(offset)}:{hex(length)}")
+        #print(f"READ {hex(offset)}:{hex(length)}")
         if not self.is_valid(offset, length):
             invalid_address = offset
             if self.minimum_address < offset <= self.maximum_address:
